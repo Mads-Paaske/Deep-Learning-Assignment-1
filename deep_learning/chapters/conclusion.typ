@@ -1,17 +1,37 @@
 #import "../lib.typ": *
 
-== Conclusion
+= Conclusion
 
-Three approaches to classifying blood cells from the BloodMNIST dataset were
-implemented and compared. k-Nearest Neighbors, working directly on raw pixel
-distances, reached 17.6% test accuracy, only modestly above the 12.5% expected
-from random guessing across eight classes. The two linear classifiers performed
-substantially better, at 70.6% for hinge loss and 68.8% for softmax loss.
+We implemented and compared three ways of classifying blood cells from
+BloodMNIST. The neural network was best at 83.9% on the test set, kNN reached
+75.2%, and the two linear classifiers came last at 71.4% and 66.8%. All four beat
+the 12.5% expected from guessing by a wide margin.
 
-#todo[One sentence on the 1.3 result once it exists.]
+Two results are worth keeping. The network wins because it can bend its decision
+boundary, and cell types differ in shape and texture rather than brightness. kNN
+beating both linear classifiers is the less obvious one: compressing a class into
+a single linear template costs more than the learning gains, for classes that
+vary as much as these do.
 
-The main finding is that learning a weighted template per class, even a purely
-linear one, is worth far more on this task than comparing images pixel by pixel.
-The largest remaining limitation is that all of these results come from a
-subsample of the available data, so the figures reported here should be read as
-a lower bound on what these methods can do.
+The errors are the same everywhere. Platelets are easy because they look
+different. Basophils and monocytes are hard, and they lose images to immature
+granulocytes, which is what partly developed cells would be expected to do.
+
+The main limitation is that all of this comes from 42% of the available training
+data, and the network is clearly overfitting what it did see. These numbers
+should be read as a floor rather than as the best these methods can do.
+
+#v(6pt)
+#line(length: 100%, stroke: 0.4pt + hair)
+#v(4pt)
+
+#text(size: 9pt, fill: soft)[
+  Code: `Deep_Learning_Assignment1_1_kNN_2026.ipynb`,
+  `..._1_2_LinClassify_2026.ipynb`, `..._1_3_NeuralNet_2026.ipynb`. Seeds fixed at
+  0 for shuffling and 42 for network initialization and the example grid.
+
+  Dataset: Yang, J., Shi, R., Wei, D., Liu, Z., Zhao, L., Ke, B., Pfister, H.,
+  Ni, B. (2023). MedMNIST v2: A large-scale lightweight benchmark for 2D and 3D
+  biomedical image classification. #emph[Scientific Data], 10(1), 41.
+  BloodMNIST derives from the peripheral blood cell dataset of Acevedo et al.
+]

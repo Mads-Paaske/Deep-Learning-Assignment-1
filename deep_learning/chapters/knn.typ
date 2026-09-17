@@ -1,69 +1,69 @@
 #import "../lib.typ": *
 
-== k-Nearest Neighbors
+= k-Nearest Neighbors <knn>
 
-=== Theoretical description
+== What it does
 
-k-Nearest Neighbors is one of the simplest and oldest algorithms in machine
-learning. It takes an instance-based approach: it memorises the training
-examples and makes predictions by comparing a new image against the stored ones
-using a similarity measure.
+kNN is one of the simplest algorithms in machine learning. It memorizes the
+training examples and classifies a new image by comparing it against them.
+Nothing is learned in between: training just means storing the data.
 
-Because the training phase consists only of storing the data, all computation is
-deferred to prediction time. Training is effectively instantaneous, while
-prediction is comparatively slow. This is why kNN is described as a lazy
-learner.
+All the work therefore happens at prediction time, which is why kNN is called a
+lazy learner. Training is instant, prediction is slow, because every new image is
+compared against every stored one.
 
-To classify a new example, the algorithm computes the distance from it to every
-training instance, finds the k nearest of them, and predicts the class by
-majority vote among those k labels.
+Classifying one image means measuring the distance to every training image,
+taking the k closest, and predicting whichever label appears most often among
+them. If k is 13 and eight of the thirteen nearest are neutrophils, the answer is
+neutrophil.
 
-==== Distance metrics
+== Measuring distance
 
-Two distance metrics were implemented. For two flattened image vectors $a$ and
-$b$ of length 2,352, the L1 (Manhattan) distance sums the absolute differences
-per pixel:
+Images are just lists of 2,352 numbers, so distance means comparing two lists. L1
+(Manhattan) takes the difference at each pixel, makes it positive, and sums:
 
 #eq[$ d_1(a, b) = sum_(p=1)^(2352) abs(a_p - b_p) $]
 
-and the L2 (Euclidean) distance takes the square root of the summed squared
-differences:
+L2 (Euclidean) squares each difference instead, sums, and takes the square root,
+giving ordinary straight-line distance:
 
 #eq[$ d_2(a, b) = sqrt(sum_(p=1)^(2352) (a_p - b_p)^2) $]
 
-The choice between them affects which training images count as nearest, and is
-therefore treated as a hyperparameter rather than fixed in advance.
+Squaring means one wildly different pixel counts for far more than several
+slightly different ones, while L1 spreads the weight more evenly. We could not
+say in advance which suits this data, so we tested both.
 
-=== Optimization objective and hyperparameters
+== What gets optimized
 
-kNN has no trainable parameters and no loss function, so there is no optimization
-in the usual sense. Nothing is minimized by gradient descent. The only thing
-being chosen is the pair of hyperparameters, selected by brute-force search for
-whichever combination maximises validation accuracy.
+Nothing, in the usual sense. kNN has no weights and no loss function, so there is
+no gradient descent. We only try settings and keep the best on validation.
 
-The two hyperparameters are:
+*k* is how many neighbors vote. At k = 1 a single odd training image decides the
+answer, which is overfitting: the model follows noise. At very high k the vote
+includes genuinely different cells, which is underfitting: too coarse to catch
+the real pattern.
 
-- *k*, the number of neighbors that vote. A small k risks overfitting to noise,
-  since a single unusual training image can decide the prediction. A large k
-  risks underfitting, since the vote is drawn from a neighborhood wide enough to
-  include genuinely different cells.
-- *The distance metric*, either L1 or L2.
+*The distance metric* is L1 or L2.
 
-=== Implementation
+== Implementation
 
-The distance calculation is the part worth explaining, because it is the
-computational bottleneck of the whole method.
+The distance calculation is where nearly all the runtime goes. Written the
+obvious way it is two nested loops, which is far too slow in Python. Expanding
+the squared L2 distance gives a way around that:
+
+#eq[$ norm(a - b)^2 = norm(a)^2 - 2 a dot b + norm(b)^2 $]
+
+The middle term is a dot product, and dot products between every pair are exactly
+what one matrix multiplication computes.
 
 #codeblock(
-  caption: [Vectorized L2 distance matrix],
-  explain: [This uses the identity
-    $norm(a - b)^2 = norm(a)^2 - 2 a dot b + norm(b)^2$. Expanding the square
-    this way turns the distance computation into one matrix multiplication
-    (`cross_term`) plus two row-wise sums, instead of looping over every
-    test-train pair. Broadcasting the column vector `test_sq` against the row
-    vector `train_sq` produces the full matrix in a single expression. The
-    `np.maximum(..., 0)` guards against small negative values from floating
-    point rounding before the square root.],
+  caption: [L2 distance for every test-train pair at once],
+  explain: [Line 1 is $norm(a)^2$ per test image as a column, line 2 is
+    $norm(b)^2$ per training image as a row, line 3 is the $a dot b$ term for all
+    pairs in one multiplication. Line 4 combines them; because one is a column and
+    one a row, NumPy broadcasts to the full matrix automatically. The
+    `np.maximum(..., 0)` guards against rounding error pushing a value just below
+    zero, which would break the square root.],
 )[
 ```python
 test_sq = np.sum(X_test ** 2, axis=1).reshape(num_test, 1)
@@ -73,94 +73,109 @@ dists = np.sqrt(np.maximum(test_sq - 2 * cross_term + train_sq, 0))
 ```
 ]
 
-L1 has no equivalent algebraic shortcut, because the absolute value does not
-expand into dot products. That implementation loops over the test images only,
-not over every test-train pair, which avoids building an array of shape
-(num_test × num_train × 2352) that would exhaust memory.
+#trap(title: [The images must be cast to floating point first])[
+  BloodMNIST loads as `uint8`, which holds whole numbers from 0 to 255. Squaring
+  a pixel value of 255 gives 65,025, far outside that range, so the result wraps
+  around instead of growing. The same happens in the dot product. Every distance
+  then comes out wrong.
+
+  Running the code above on the raw `uint8` arrays gave 17.6% test accuracy, and
+  L2 returned the *same* accuracy for every value of k from 1 to 21, which is the
+  clearest sign that the distances carried almost no information. Adding one cast
+  before the reshape fixes it:
+
+  ```python
+  X_train = X_train.astype(np.float32)
+  X_val = X_val.astype(np.float32)
+  ```
+
+  Test accuracy goes from 17.6% to 75.2%. Every number in this chapter is from
+  the fixed version.
+]
+
+L1 gets no such trick, since absolute values do not expand into dot products.
+That version loops over test images only, which stays fast enough. Doing both at
+once would need 2,352 numbers per test-train pair and would run out of memory.
 
 #codeblock(
-  caption: [Majority vote over the k nearest labels],
-  explain: [`argsort` orders the training images by distance and the slice takes
-    the k closest. `np.unique` with `return_counts` tallies the labels among
-    them, and `argmax` picks the most frequent. Ties are broken by whichever
-    label sorts lowest, since `argmax` returns the first maximum.],
+  caption: [The majority vote],
+  explain: [`argsort` sorts training images by distance and returns positions, so
+    `[:k]` gives the k closest. `np.unique` with `return_counts` counts each label
+    among them and `argmax` picks the most common. Ties go to the first, meaning
+    the lower class number wins.],
 )[
 ```python
 nearest_idx = np.argsort(dists[i])[:k]
-nearest_labels = self.y_train[nearest_idx]
-values, counts = np.unique(nearest_labels, return_counts=True)
+values, counts = np.unique(self.y_train[nearest_idx], return_counts=True)
 y_pred[i] = values[np.argmax(counts)]
 ```
 ]
 
-=== Sanity check
+== Checking it works
 
 #fig(
-  caption: [#todo[Validation images shown alongside their nearest neighbors in
-    the training set.]],
-  reading: [#todo[Comment on whether the retrieved neighbors look like the same
-    cell type, or whether they merely share brightness and background.]],
-)[#todo[figures/knn-nearest-neighbors.png]]
+  caption: [Five validation images and the five training images closest to each
+    under L1 distance. A tick means the neighbor has the same label as the query.],
+  reading: [Most retrieved neighbors are the same cell type, which is what we want
+    to see before trusting any accuracy number. This check is also what would have
+    caught the overflow above: with the broken distances the neighbors were
+    unrelated to the query.],
+)[#image("../figures/knn-neighbours.png", width: 63%)]
 
-=== Training process
+== Tuning and results
 
-There is no training process in the usual sense. The search covered 18 values of
-k, namely 1, 3, 5, 7, 13, 21, 33, 45, 55, 67, 79, 91, 111, 131, 149, 167, 193
-and 201, evaluated for both L1 and L2 distance. That is 36 configurations, each
-evaluated once against the 500-image validation set.
+There is no training loop, so tuning is just trying combinations. We tested 18
+values of k (1, 3, 5, 7, 13, 21, 33, 45, 55, 67, 79, 91, 111, 131, 149, 167, 193,
+201) with both metrics, giving 36 combinations, each scored once on the 500
+validation images.
 
 #fig(
-  caption: [#todo[Validation accuracy as a function of k, one curve per distance
-    metric.]],
-  reading: [#todo[Point out where the curve peaks and how it behaves as k grows.]],
-)[#todo[figures/knn-tuning.png]]
+  caption: [Validation accuracy against k for both distance metrics.],
+  reading: [L1 beats L2 at every k. Both rise quickly to about k = 13 and then
+    flatten, so the exact choice of k matters much less than the choice of metric.],
+)[#image("../figures/knn-tuning.png", width: 60%)]
 
-=== Results
+The best combination was *k = 13 with L1 distance* at *79.4%* on validation.
+Running that once on the test set gave *75.2%*, and *72.5%* balanced accuracy.
 
-The best configuration on the validation set was *k = 5 with L1 distance*, at
-*23.6%* validation accuracy. Run once on the held-out test set, that same
-configuration scored *17.6%*.
+The balanced figure is lower because it averages the eight classes equally
+instead of letting the common ones dominate, so it is the more honest number on
+an imbalanced dataset.
 
-#restable(
-  columns: (auto, auto, auto),
-  caption: [Best kNN configuration and its performance.],
-)[*Configuration*][*Validation accuracy*][*Test accuracy*]
-[k = 5, L1 distance][23.6%][17.6%]
+#fig(
+  caption: [Confusion matrix for k = 13, L1, on the 1,000 test images. Rows are
+    the true class, columns the prediction.],
+  reading: [Platelets are almost perfect at 128 of 129. Basophils are worst at 28
+    of 73, with 27 of them predicted as immature granulocytes. Monocytes have the
+    same problem: 37 of 82 go to immature granulocytes.],
+)[#image("../figures/knn-confusion.png", width: 48%)]
 
-Both numbers are low. Random guessing across eight classes gives roughly 12.5%,
-so the model is doing better than chance, but not by a wide margin.
+== Discussion
 
-#todo[Add a confusion matrix here. With eight imbalanced classes it will show
-which cell types the model actually manages and which it never gets right,
-which a single accuracy figure cannot.]
+kNN does much better than a pixel-distance method might be expected to, which
+tells us the cell images are more separable in raw pixel space than assumed. The
+cells are centered and photographed under similar conditions, so two images of
+the same type really do end up close together.
 
-=== Discussion
+The per-class results line up with the visual analysis in @data-and-setup.
+Platelets are the smallest and most distinct cell type and they are classified
+almost perfectly. The errors cluster exactly where the cells look alike, and
+immature granulocytes act as a sink: basophils, monocytes and neutrophils all
+lose images to that class. That makes sense, since immature granulocytes are by
+definition partly developed cells that resemble several mature types.
 
-The low accuracy is roughly what raw-pixel distance on medical images should be
-expected to give. L1 and L2 distance between flattened pixel vectors respond to
-brightness, staining variation, and small shifts in where the cell sits in the
-frame, and none of those relate to cell type. Two images of the same cell type
-stained slightly differently can end up further apart in pixel space than two
-images of different types that happen to share a background.
+Basophils at 38.4% are the weakest class. They are also among the rarest in
+training at 852 images, so the model has both the least data and the most visual
+overlap working against it.
 
-The number of dimensions makes this worse. Each image is a point in
-2,352-dimensional space and there are only 5,000 training points to fill it, so
-the space is covered very sparsely. The nearest neighbor of a given image is then
-not necessarily similar to it, it is just the closest one available. This is the
-curse of dimensionality, and kNN is especially exposed to it because distance is
-the only information it uses.
-
-#limitation(title: [The gap between validation and test accuracy])[
-  Validation accuracy was 23.6% and test accuracy 17.6%, a drop of six
-  percentage points. This suggests the hyperparameter search overfitted to the
-  validation set. Picking the best of 36 configurations against only 500 images
-  means some of the winning margin is noise specific to those 500, which does
-  not carry over to the test set.
+#limitation(title: [Validation scored higher than test])[
+  79.4% on validation against 75.2% on test is a four-point drop. Some of that is
+  the tuning fitting itself to the 500 validation images: pick the best of 36
+  combinations and part of the winning margin is luck that does not transfer.
 ]
 
-On whether the search was thorough enough: 18 values of k across two metrics is
-a reasonable spread, and the curve is sampled densely enough at the low end where
-the optimum turned out to be. The bigger limitation is the data, not the grid.
-Training on 5,000 of the 11,959 available images is more likely to be what caps
-performance here, so using the full training set would probably help more than
-testing further values of k.
+Eighteen values of k across two metrics is a reasonable spread, and since the
+curve is flat past k = 13 a finer grid would not help. The data is the real
+limit. We used 5,000 of the 11,959 available training images, and for a method
+that works by finding similar examples, more examples to search through is what
+helps most.
