@@ -1,0 +1,11 @@
+# Typst compiled output
+main.pdf
+
+# Editor / OS
+.DS_Store
+
+# Scratch
+out.txt
+
+# Scratch paste area (not part of the build)
+_paste/
