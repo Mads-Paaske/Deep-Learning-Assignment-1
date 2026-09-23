@@ -50,7 +50,7 @@ into separate nucleuses. Eosinophils are the only class with pink or red granule
 in the surrounding cytoplasm, so they stand out on color alone.
 
 Three are hard. Basophils, immature granulocytes and monocytes all appear as one
-large round purple mass filling most of the frame, and at 28×28 pixels there is
+large round purple mass that fills most of the frame, and at 28×28 pixels there is
 little to separate them.
 
 The last two is in between. Lymphocytes and erythroblasts both show a small,
@@ -80,8 +80,8 @@ methods then differ slightly:
   1,712, and tested on 1,000 instead of 3,421.
 
   The reason is runtime. kNN measures the distance from every test image to every
-  training image, so the work grows with the two sizes multiplied together. Full
-  runs took too long on a laptop.
+  training image, so the work grows with the two sizes multiplied together. Full runs could have 
+  taken too long on a laptop.
 
   The cost of this decision is accuracy. The models see under half the training data and is validated on under half of the data as well.
 ]

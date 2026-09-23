@@ -7,7 +7,7 @@ belonging to one of eight groups numbered 0 to 7. The groups are basophil,
 eosinophil, erythroblast, immature granulocytes, lymphocyte, monocyte,
 neutrophil and platelet.
 
-The model sorts each cell image into one of eight groups, a task lab technicians currently do by hand, which is insufissient.
+The model sorts each cell image into one of eight groups, a task lab technicians currently do by hand, which is insufficient.
 
 We implemented three methods:
 
