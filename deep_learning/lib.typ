@@ -23,13 +23,9 @@
 #let choice(title: [Design choice], body) = block(
   width: 100%, breakable: true, above: 10pt, below: 10pt,
 )[
-  #line(length: 100%, stroke: 0.4pt + hair)
-  #v(6pt)
   #text(weight: "bold", size: 11pt)[#title]
   #v(3pt)
   #body
-  #v(6pt)
-  #line(length: 100%, stroke: 0.4pt + hair)
 ]
 
 // --- A limitation or caveat.
@@ -91,17 +87,13 @@
   }
 ]
 
-// --- A bug or pitfall worth calling out, set off by hairlines.
+// --- A bug or pitfall worth calling out.
 #let trap(title: [Pitfall], body) = block(
   width: 100%, breakable: true, above: 10pt, below: 10pt,
 )[
-  #line(length: 100%, stroke: 0.4pt + hair)
-  #v(6pt)
   #text(weight: "bold", size: 11pt)[#title]
   #v(3pt)
   #body
-  #v(6pt)
-  #line(length: 100%, stroke: 0.4pt + hair)
 ]
 
 // --- Visible placeholder for anything still missing.

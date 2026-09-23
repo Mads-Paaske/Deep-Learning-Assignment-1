@@ -43,13 +43,7 @@ The model is one class, `FullyConnectedNN`, built so the layer sizes are just a
 list. Passing `[2352, 500, 8]` gives the network above, and adding another number
 would add another hidden layer without changing any other code.
 
-#codeblock(
-  caption: [The forward pass],
-  explain: [Each layer multiplies by its weights and adds the bias. The `if`
-    applies ReLU to every layer except the last, which is left as raw scores. The
-    `cache` stores the values at each step, because backpropagation needs them
-    again on the way back.],
-)[
+#codeblock(caption: [The forward pass])[
 ```python
 for i in range(1, len(self.layers)):
     W, b = self.params['W' + str(i)], self.params['b' + str(i)]
@@ -63,14 +57,11 @@ for i in range(1, len(self.layers)):
 ```
 ]
 
-#codeblock(
-  caption: [The backward pass],
-  explain: [The loop runs in reverse, from the output layer back to the first.
-    Each step computes the gradient for that layer's weights, adding the
-    regularization term. The last line passes the error down to the previous
-    layer, multiplying by the ReLU derivative so that nodes switched off by ReLU
-    get no gradient.],
-)[
+Each layer multiplies by its weights and adds the bias. The `if` applies ReLU to
+every layer except the last, which is left as raw scores. The `cache` stores the
+values at each step, because backpropagation needs them again on the way back.
+
+#codeblock(caption: [The backward pass])[
 ```python
 for i in reversed(range(1, len(self.layers))):
     dZ = dA
@@ -81,6 +72,11 @@ for i in reversed(range(1, len(self.layers))):
         dA = np.dot(dZ, self.params['W' + str(i)].T) * self.relu_derivative(cache['Z' + str(i - 1)])
 ```
 ]
+
+The loop runs in reverse, from the output layer back to the first. Each step
+computes the gradient for that layer's weights, adding the regularization term.
+The last line passes the error down to the previous layer, multiplying by the
+ReLU derivative so that nodes switched off by ReLU get no gradient.
 
 The class also offers momentum and Adam as alternatives to plain SGD. We used
 SGD for every result below.
@@ -100,12 +96,13 @@ SGD for every result below.
 We searched over hidden layer size and learning rate, 60 epochs each, batch size
 64, regularization 0.001.
 
-#fig(
-  caption: [Validation accuracy across the grid.],
-  reading: [Accuracy climbs steeply from learning rate 0.01 to 0.05 and then
-    flattens. The wider hidden layer is slightly better everywhere, but the
-    learning rate matters far more than the width.],
-)[#image("../figures/nn-tuning.png", width: 60%)]
+#fig(caption: [Validation accuracy across the grid.])[
+  #image("../figures/nn-tuning.png", width: 60%)
+]
+
+Accuracy climbs steeply from learning rate 0.01 to 0.05 and then flattens. The
+wider hidden layer is slightly better everywhere, but the learning rate matters
+far more than the width.
 
 #restable(
   columns: (auto, auto, auto, auto),
@@ -120,33 +117,36 @@ We searched over hidden layer size and learning rate, 60 epochs each, batch size
   [500], [0.1], [99.7%], [*88.0%*],
 )
 
-The best setting was *500 hidden nodes at learning rate 0.1*, giving *88.0%* on
-validation, *83.9%* on the test set and *81.6%* balanced accuracy.
+The best setting was 500 hidden nodes at learning rate 0.1, giving 88.0% on
+validation, 83.9% on the test set and 81.6% balanced accuracy.
 
-#fig(
-  caption: [Training loss for the best setting.],
-  reading: [The loss falls quickly over the first epochs and then flattens out
-    close to zero, which matches the 99.7% training accuracy.],
-)[#image("../figures/nn-loss.png", width: 59%)]
+#fig(caption: [Training loss for the best setting.])[
+  #image("../figures/nn-loss.png", width: 59%)
+]
 
-#fig(
-  caption: [Confusion matrix for the best network on the test set.],
-  reading: [The same shape of errors as the other two methods, but fewer of them.
-    Basophils and monocytes are still the weakest classes and still lose images to
-    immature granulocytes.],
-)[#image("../figures/nn-confusion.png", width: 48%)]
+The loss falls quickly over the first epochs and then flattens out close to
+zero, which matches the 99.7% training accuracy.
 
-#fig(
-  caption: [First-layer weights for 16 of the 500 hidden nodes.],
-  reading: [Unlike the linear classifier, these are not one template per class.
-    Each hidden node learns a small piece of structure, and the output layer
-    combines 500 of them into a class score.],
-)[#image("../figures/nn-weights.png", width: 78%)]
+#fig(caption: [Confusion matrix for the best network on the test set.])[
+  #image("../figures/nn-confusion.png", width: 48%)
+]
+
+The same shape of errors as the other two methods, but fewer of them. Basophils
+and monocytes are still the weakest classes and still lose images to immature
+granulocytes.
+
+#fig(caption: [First-layer weights for 16 of the 500 hidden nodes.])[
+  #image("../figures/nn-weights.png", width: 78%)
+]
+
+Unlike the linear classifier, these are not one template per class. Each hidden
+node learns a small piece of structure, and the output layer combines 500 of
+them into a class score.
 
 == Discussion
 
 The network is the best of the three methods, at 83.9% against 75.2% for kNN and
-71.4% for the linear SVM. The non-linearity bought roughly 12 points over the
+70.6% for the linear SVM. The non-linearity bought roughly 13 points over the
 linear model that is otherwise closest to it.
 
 That fits the data. Cell types differ in shape and texture rather than in overall

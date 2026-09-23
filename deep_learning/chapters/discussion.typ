@@ -8,7 +8,7 @@
   columns: (auto, auto, auto, auto, auto),
   caption: [All four models on the same 1,000 test images. Guessing gives 12.5%.],
   [*Model*], [*Best setting*], [*Validation*], [*Test*], [*Balanced test*],
-  [Neural network], [500 hidden, lr 0.1], [88.0%], [*83.9%*], [*81.6%*],
+  [Neural network], [500 hidden, lr 0.1], [88.0%], [83.9%], [81.6%],
   [kNN], [k = 13, L1], [79.4%], [75.2%], [72.5%],
   [Linear, SVM], [lr 5e-7, reg 1e3], [75.0%], [71.4%], [68.6%],
   [Linear, softmax], [lr 1e-6, reg 1e3], [70.2%], [66.8%], [64.3%],
@@ -72,7 +72,7 @@ the least data and the most visual overlap working against them.
   Every model saw 5,000 of 11,959 training images, was tuned on 500 of 1,712 and
   tested on 1,000 of 3,421. Choosing the best setting from 500 validation images
   means part of that choice is luck, which is visible in the validation-to-test
-  drop of 4 to 5 points for every model.
+  drop of 3 to 4 points for every model, as it could be the cause.
 ]
 
 #limitation(title: [The grids were too narrow])[
@@ -103,16 +103,11 @@ the least data and the most visual overlap working against them.
 
 == What we would try next
 
-Roughly in order of expected payoff:
+
 
 *Use all the data.* Every result here comes from 42% of the training images. It
 is the cheapest change, and the network should gain most since overfitting is its
 main problem.
-
-*Regularize the network properly.* Raise the regularization strength, add
-dropout, or stop early when validation accuracy stops improving. The 12 point
-train-validation gap is the largest single thing standing between the current
-83.9% and a better number.
 
 *Widen the grids* so the best setting is not at the edge.
 
@@ -122,7 +117,6 @@ depends less on which 500 images we happened to draw.
 *Handle the imbalance directly*, by weighting rare classes more heavily in the
 loss or by resampling. Basophils would benefit most.
 
-*Use a convolutional network.* Our network flattens the image into 2,352 numbers,
-so it has no idea which pixels are next to each other. A convolutional network
-works on the grid and learns spatial features such as edges and texture, which is
-what actually separates these cell types.
+*Try a convolutional network.* This is a type of neural network made for
+images. Unlike our models, it looks at the image as a picture instead of a long
+list of numbers, so it can better recognize the shapes of the cells.

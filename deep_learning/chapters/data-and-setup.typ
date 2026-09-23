@@ -8,7 +8,7 @@ BloodMNIST is part of the MedMNIST collection and has 17,092 images. Each is 28
 pixels wide, 28 tall, and 3 color channels, so 2,352 numbers per image. Both
 methods work on that flat vector rather than on the image as a grid.
 
-The data comes already split:
+The data has the following split:
 
 #restable(
   columns: (auto, auto, auto, 1fr),
@@ -20,9 +20,7 @@ The data comes already split:
 )
 
 Hyperparameters are the settings that are not learned from the data and have to
-be chosen by hand, such as how many neighbors to compare against. We try
-different values and keep whichever scores best on validation. The test set stays
-untouched until the end.
+be chosen by hand, such as how many neighbors to compare against. We therefore adjust the code with different values and keep the ones with the best scores on validation.
 
 == Class distribution
 
@@ -47,26 +45,22 @@ untouched until the end.
 Looking at the example images, the classes fall into three groups.
 
 Three of them are easy to pick out. Platelets are tiny specks, several times
-smaller than any other cell. Neutrophils have a clearly lobed nucleus that splits
-into separate segments. Eosinophils are the only class with pink or red granules
+smaller than any other cell. Neutrophils have a circled nucleus that splits
+into separate nucleuses. Eosinophils are the only class with pink or red granules
 in the surrounding cytoplasm, so they stand out on color alone.
 
 Three are hard. Basophils, immature granulocytes and monocytes all appear as one
 large round purple mass filling most of the frame, and at 28×28 pixels there is
 little to separate them.
 
-The last two sit in between. Lymphocytes and erythroblasts both show a small,
-round, dark nucleus, and they mostly differ in the surrounding cytoplasm, which is
-exactly the detail this resolution loses.
+The last two is in between. Lymphocytes and erythroblasts both show a small,
+round, dark nucleus, but differs from the surroundings.
 
-This grouping predicts where the errors should fall, and @discussion checks it
-against the confusion matrices.
+This grouping gives a prediction of where the errors will fall, which we test against the results.
 
 #fig(
   caption: [Five random training images from each class.],
-  reading: [The three easy classes (platelet, neutrophil, eosinophil) differ in
-    size, nucleus shape and color. The three hard ones (basophil, immature
-    granulocytes, monocyte) all look like a large round purple mass.],
+  
 )[#image("../figures/class-examples.png", width: 68%)]
 
 == Preprocessing and subsampling
@@ -74,8 +68,7 @@ against the confusion matrices.
 Every image is flattened from 28×28×3 into one vector of 2,352 numbers. The three
 methods then differ slightly:
 
-- *kNN* casts to `float32` and does nothing else. The cast matters more than it
-  sounds; see the pitfall in @knn.
+- *kNN* converts the pixel values to float32 and does nothing else. Without this step, squaring the values overflows and the distances come out wrong.
 - *The linear classifiers* subtract the mean training image, which centers the
   data around zero, then append a constant 1 for the bias trick.
 - *The network* subtracts the mean image and also divides by 255, which brings
@@ -90,9 +83,7 @@ methods then differ slightly:
   training image, so the work grows with the two sizes multiplied together. Full
   runs took too long on a laptop.
 
-  The cost is accuracy. The models see under half the training data. The
-  500-image validation set is the bigger worry: picking the best setting from
-  only 500 images means part of that choice is luck. @discussion returns to both.
+  The cost of this decision is accuracy. The models see under half the training data and is validated on under half of the data as well.
 ]
 
 == Metrics
@@ -110,14 +101,3 @@ Every class then counts equally regardless of how often it appears, so a model
 that ignores basophils cannot hide behind its neutrophil score. Each model also
 gets a confusion matrix showing how many images of each class were predicted as
 each other class.
-
-== How we tuned
-
-#choice(title: [Design choice: tune on validation, never on test])[
-  For each model we ran a grid search, meaning we tried every combination in a
-  list and compared scores. The best on validation was kept and run once on test.
-
-  The test set is never used while choosing. That is what makes the final number
-  trustworthy. Picking the setting that scored best on test would mean reporting
-  how well the model does on the data we tuned it against.
-]

@@ -21,9 +21,6 @@ The main limitation is that all of this comes from 42% of the available training
 data, and the network is clearly overfitting what it did see. These numbers
 should be read as a floor rather than as the best these methods can do.
 
-#v(6pt)
-#line(length: 100%, stroke: 0.4pt + hair)
-#v(4pt)
 
 #text(size: 9pt, fill: soft)[
   Code: `Deep_Learning_Assignment1_1_kNN_2026.ipynb`,
