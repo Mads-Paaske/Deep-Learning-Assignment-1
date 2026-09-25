@@ -36,12 +36,6 @@ by a margin of at least 1:
 
 #eq[$ L_i = sum_(j != y_i) max(0, s_j - s_(y_i) + 1) $]
 
-$s_j$ is the score for class $j$ and $y_i$ the correct class. For each wrong
-class, work out how far it is from being a margin below the correct one. If it is
-already far enough below, `max(0, ...)` makes the term zero. That is the key
-behavior: once a wrong class is beaten by enough, hinge loss ignores it and only
-pushes on cases still too close.
-
 Here $s_j$ is the score of a wrong class and $s_(y_i)$ is the score of the correct class.
 For each wrong class we check whether it is at least 1 point below the correct class. If it is
 it adds nothing to the loss, as it doesn't need optimization. If it is too close, it adds the difference.
