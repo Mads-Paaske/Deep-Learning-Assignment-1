@@ -22,13 +22,4 @@ data, and the network is clearly overfitting what it did see. These numbers
 should be read as a floor rather than as the best these methods can do.
 
 
-#text(size: 9pt, fill: soft)[
-  Code: `Deep_Learning_Assignment1_1_kNN_2026.ipynb`,
-  `..._1_2_LinClassify_2026.ipynb`, `..._1_3_NeuralNet_2026.ipynb`. Seeds fixed at
-  0 for shuffling and 42 for network initialization and the example grid.
 
-  Dataset: Yang, J., Shi, R., Wei, D., Liu, Z., Zhao, L., Ke, B., Pfister, H.,
-  Ni, B. (2023). MedMNIST v2: A large-scale lightweight benchmark for 2D and 3D
-  biomedical image classification. #emph[Scientific Data], 10(1), 41.
-  BloodMNIST derives from the peripheral blood cell dataset of Acevedo et al.
-]
