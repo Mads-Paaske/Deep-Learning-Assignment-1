@@ -146,7 +146,7 @@ them into a class score.
 == Discussion
 
 The network is the best of the three methods, at 83.9% against 75.2% for kNN and
-70.6% for the linear SVM. The non-linearity bought roughly 13 points over the
+71.4% for the linear SVM. The non-linearity bought roughly 13 points over the
 linear model that is otherwise closest to it.
 
 That fits the data. Cell types differ in shape and texture rather than in overall
